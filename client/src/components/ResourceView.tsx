@@ -10,8 +10,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, FileText, MessageSquare, ShoppingBag, Mail, AtSign, Calendar, Hash, Tag, CreditCard, AlignLeft, FileText as FileDescription } from "lucide-react";
+import { User, FileText, MessageSquare, ShoppingBag, Mail, AtSign, Calendar, Tag, CreditCard, AlignLeft, Copy, Check, Hash } from "lucide-react";
 import { format } from "date-fns";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface ResourceViewProps {
   resourceType: ResourceType;
@@ -24,6 +26,64 @@ export default function ResourceView({
   item,
   onClose,
 }: ResourceViewProps) {
+  const { toast } = useToast();
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Function to copy text to clipboard
+  const copyToClipboard = (text: string, fieldName: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(fieldName);
+      toast({
+        title: "Copied!",
+        description: `${fieldName} copied to clipboard`,
+        duration: 2000,
+      });
+      
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedField(null);
+      }, 2000);
+    }).catch((err) => {
+      console.error('Failed to copy text: ', err);
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    });
+  };
+
+  // Field component with copy functionality
+  const Field = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) => {
+    const stringValue = String(value);
+    const isCopied = copiedField === label;
+    
+    return (
+      <div className="flex items-start gap-2 group">
+        <div className="h-4 w-4 text-gray-500 mt-1 flex-shrink-0">
+          {icon}
+        </div>
+        <div className="flex-grow">
+          <p className="text-sm font-medium text-gray-700">{label}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-gray-600">{stringValue}</p>
+            <button 
+              type="button"
+              onClick={() => copyToClipboard(stringValue, label)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-md hover:bg-gray-200"
+              title={`Copy ${label}`}
+            >
+              {isCopied ? 
+                <Check className="h-3.5 w-3.5 text-green-500" /> : 
+                <Copy className="h-3.5 w-3.5 text-gray-400" />
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const getIcon = () => {
     switch (resourceType) {
       case "users":
@@ -62,45 +122,29 @@ export default function ResourceView({
     const user = item as UserType;
     return (
       <div className="space-y-3">
-        <div className="flex items-start gap-2">
-          <User className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Name</p>
-            <p className="text-sm text-gray-600">{user.name}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<User />} 
+          label="Name" 
+          value={user.name} 
+        />
         
-        <div className="flex items-start gap-2">
-          <Mail className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Email</p>
-            <p className="text-sm text-gray-600">{user.email}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<Mail />} 
+          label="Email" 
+          value={user.email} 
+        />
         
-        <div className="flex items-start gap-2">
-          <AtSign className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Username</p>
-            <p className="text-sm text-gray-600">{user.username}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<AtSign />} 
+          label="Username" 
+          value={user.username} 
+        />
         
-        <div className="flex items-start gap-2">
-          <Hash className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">ID</p>
-            <p className="text-sm text-gray-600">{user.id}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-start gap-2">
-          <Calendar className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Created At</p>
-            <p className="text-sm text-gray-600">{formatDate(user.createdAt)}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<Calendar />} 
+          label="Created At" 
+          value={formatDate(user.createdAt)} 
+        />
       </div>
     );
   };
@@ -109,45 +153,29 @@ export default function ResourceView({
     const post = item as PostType;
     return (
       <div className="space-y-3">
-        <div className="flex items-start gap-2">
-          <FileText className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Title</p>
-            <p className="text-sm text-gray-600">{post.title}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<FileText />} 
+          label="Title" 
+          value={post.title} 
+        />
         
-        <div className="flex items-start gap-2">
-          <AlignLeft className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Content</p>
-            <p className="text-sm text-gray-600">{post.body}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<AlignLeft />} 
+          label="Content" 
+          value={post.body} 
+        />
         
-        <div className="flex items-start gap-2">
-          <User className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">User ID</p>
-            <p className="text-sm text-gray-600">{post.userId}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<User />} 
+          label="User ID" 
+          value={post.userId} 
+        />
         
-        <div className="flex items-start gap-2">
-          <Hash className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">ID</p>
-            <p className="text-sm text-gray-600">{post.id}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-start gap-2">
-          <Calendar className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Created At</p>
-            <p className="text-sm text-gray-600">{formatDate(post.createdAt)}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<Calendar />} 
+          label="Created At" 
+          value={formatDate(post.createdAt)} 
+        />
       </div>
     );
   };
@@ -156,53 +184,35 @@ export default function ResourceView({
     const comment = item as CommentType;
     return (
       <div className="space-y-3">
-        <div className="flex items-start gap-2">
-          <User className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Name</p>
-            <p className="text-sm text-gray-600">{comment.name}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<User />} 
+          label="Name" 
+          value={comment.name} 
+        />
         
-        <div className="flex items-start gap-2">
-          <Mail className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Email</p>
-            <p className="text-sm text-gray-600">{comment.email}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<Mail />} 
+          label="Email" 
+          value={comment.email} 
+        />
         
-        <div className="flex items-start gap-2">
-          <MessageSquare className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Comment</p>
-            <p className="text-sm text-gray-600">{comment.body}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<MessageSquare />} 
+          label="Comment" 
+          value={comment.body} 
+        />
         
-        <div className="flex items-start gap-2">
-          <FileText className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Post ID</p>
-            <p className="text-sm text-gray-600">{comment.postId}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<FileText />} 
+          label="Post ID" 
+          value={comment.postId} 
+        />
         
-        <div className="flex items-start gap-2">
-          <Hash className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">ID</p>
-            <p className="text-sm text-gray-600">{comment.id}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-start gap-2">
-          <Calendar className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Created At</p>
-            <p className="text-sm text-gray-600">{formatDate(comment.createdAt)}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<Calendar />} 
+          label="Created At" 
+          value={formatDate(comment.createdAt)} 
+        />
       </div>
     );
   };
@@ -211,53 +221,35 @@ export default function ResourceView({
     const product = item as ProductType;
     return (
       <div className="space-y-3">
-        <div className="flex items-start gap-2">
-          <ShoppingBag className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Product Name</p>
-            <p className="text-sm text-gray-600">{product.name}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<ShoppingBag />} 
+          label="Product Name" 
+          value={product.name} 
+        />
         
-        <div className="flex items-start gap-2">
-          <CreditCard className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Price</p>
-            <p className="text-sm text-gray-600">${product.price.toFixed(2)}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<CreditCard />} 
+          label="Price" 
+          value={`$${product.price.toFixed(2)}`} 
+        />
         
-        <div className="flex items-start gap-2">
-          <AlignLeft className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Description</p>
-            <p className="text-sm text-gray-600">{product.description}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<AlignLeft />} 
+          label="Description" 
+          value={product.description} 
+        />
         
-        <div className="flex items-start gap-2">
-          <Tag className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Category</p>
-            <p className="text-sm text-gray-600">{product.category}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<Tag />} 
+          label="Category" 
+          value={product.category} 
+        />
         
-        <div className="flex items-start gap-2">
-          <Hash className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">ID</p>
-            <p className="text-sm text-gray-600">{product.id}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-start gap-2">
-          <Calendar className="h-4 w-4 text-gray-500 mt-1" />
-          <div>
-            <p className="text-sm font-medium text-gray-700">Created At</p>
-            <p className="text-sm text-gray-600">{formatDate(product.createdAt)}</p>
-          </div>
-        </div>
+        <Field 
+          icon={<Calendar />} 
+          label="Created At" 
+          value={formatDate(product.createdAt)} 
+        />
       </div>
     );
   };
