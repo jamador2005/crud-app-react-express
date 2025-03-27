@@ -237,7 +237,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   apiRouter.post("/api/products", async (req, res) => {
     await handleRequest(req, res, async () => {
-      const productData = insertProductSchema.parse(req.body);
+      // Pre-process the request body to convert price to a number if it's a string
+      const requestBody = { ...req.body };
+      if (typeof requestBody.price === 'string') {
+        requestBody.price = parseFloat(requestBody.price);
+      }
+      
+      const productData = insertProductSchema.parse(requestBody);
       const newProduct = await storage.createProduct(productData);
       res.status(201);
       return newProduct;
@@ -247,7 +253,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.put("/api/products/:id", async (req, res) => {
     await handleRequest(req, res, async () => {
       const id = parseInt(req.params.id);
-      const productData = insertProductSchema.partial().parse(req.body);
+      
+      // Pre-process the request body to convert price to a number if it's a string
+      const requestBody = { ...req.body };
+      if (typeof requestBody.price === 'string') {
+        requestBody.price = parseFloat(requestBody.price);
+      }
+      
+      const productData = insertProductSchema.partial().parse(requestBody);
       
       const updatedProduct = await storage.updateProduct(id, productData);
       if (!updatedProduct) {
