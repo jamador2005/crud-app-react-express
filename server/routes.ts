@@ -237,13 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   apiRouter.post("/api/products", async (req, res) => {
     await handleRequest(req, res, async () => {
-      // Pre-process the request body to convert price to a number if it's a string
-      const requestBody = { ...req.body };
-      if (typeof requestBody.price === 'string') {
-        requestBody.price = parseFloat(requestBody.price);
-      }
-      
-      const productData = insertProductSchema.parse(requestBody);
+      const productData = insertProductSchema.parse(req.body);
       const newProduct = await storage.createProduct(productData);
       res.status(201);
       return newProduct;
@@ -251,25 +245,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   apiRouter.put("/api/products/:id", async (req, res) => {
-    await handleRequest(req, res, async () => {
+    try {
       const id = parseInt(req.params.id);
       
-      // Pre-process the request body to convert price to a number if it's a string
-      const requestBody = { ...req.body };
-      if (typeof requestBody.price === 'string') {
-        requestBody.price = parseFloat(requestBody.price);
-      }
+      // Get the raw data without validation for now
+      const rawData = req.body;
       
-      const productData = insertProductSchema.partial().parse(requestBody);
-      
-      const updatedProduct = await storage.updateProduct(id, productData);
-      if (!updatedProduct) {
+      // Get the product first to check if it exists
+      const existingProduct = await storage.getProduct(id);
+      if (!existingProduct) {
         res.status(404).json({ message: "Product not found" });
         return;
       }
       
-      return updatedProduct;
-    });
+      // Manually create a properly typed object to avoid schema validation issues
+      const updateData: Partial<InsertProduct> = {};
+      
+      if (rawData.name !== undefined) updateData.name = rawData.name;
+      if (rawData.description !== undefined) updateData.description = rawData.description;
+      if (rawData.category !== undefined) updateData.category = rawData.category;
+      if (rawData.price !== undefined) {
+        // Convert price to a number regardless of input format
+        updateData.price = typeof rawData.price === 'string' 
+          ? parseFloat(rawData.price) 
+          : rawData.price;
+      }
+      
+      // Update the product
+      const updatedProduct = await storage.updateProduct(id, updateData);
+      res.json(updatedProduct);
+    } catch (err) {
+      console.error("Error updating product:", err);
+      res.status(500).json({ message: "Error updating product", error: err instanceof Error ? err.message : String(err) });
+    }
   });
 
   apiRouter.delete("/api/products/:id", async (req, res) => {

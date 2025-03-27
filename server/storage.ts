@@ -227,7 +227,23 @@ export class MemStorage implements IStorage {
   async createProduct(productData: InsertProduct): Promise<Product> {
     const id = this.productIdCounter++;
     const now = new Date();
-    const product: Product = { ...productData, id, createdAt: now };
+    
+    // Convert price to number (if it's a string) to ensure consistent storage
+    // The Product type requires price to be a number
+    const processedPrice = typeof productData.price === 'string' 
+      ? parseFloat(productData.price) 
+      : productData.price;
+    
+    // Create a validated product object with the correct types
+    const product: Product = {
+      id,
+      createdAt: now,
+      name: productData.name,
+      description: productData.description,
+      category: productData.category,
+      price: processedPrice // Always a number now
+    };
+    
     this.products.set(id, product);
     return product;
   }
@@ -236,7 +252,23 @@ export class MemStorage implements IStorage {
     const currentProduct = this.products.get(id);
     if (!currentProduct) return undefined;
 
-    const updatedProduct: Product = { ...currentProduct, ...productData };
+    // Create a updates object that will be compatible with Product type
+    const updates: Partial<Product> = {};
+    
+    // Copy all fields except price which needs special handling
+    if ('name' in productData) updates.name = productData.name;
+    if ('description' in productData) updates.description = productData.description;
+    if ('category' in productData) updates.category = productData.category;
+    
+    // Handle price separately to ensure it's a number
+    if ('price' in productData && productData.price !== undefined) {
+      updates.price = typeof productData.price === 'string' 
+        ? parseFloat(productData.price) 
+        : productData.price;
+    }
+
+    // Apply the updates to the current product
+    const updatedProduct: Product = { ...currentProduct, ...updates };
     this.products.set(id, updatedProduct);
     return updatedProduct;
   }
