@@ -6,7 +6,8 @@ import {
   insertPostSchema,
   insertCommentSchema,
   insertProductSchema,
-  ResourceType
+  ResourceType,
+  InsertProduct
 } from "@shared/schema";
 import { z } from "zod";
 
