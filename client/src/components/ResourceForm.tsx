@@ -98,10 +98,10 @@ export default function ResourceForm({
     resolver: zodResolver(getFormSchema()),
     defaultValues: item ? {
       ...item,
-      // Convert these specific fields to strings for the form
-      ...(resourceType === "posts" && { userId: String(item.userId) }),
-      ...(resourceType === "comments" && { postId: String(item.postId) }),
-      ...(resourceType === "products" && { price: String(item.price) }),
+      // Type-safe property access based on resource type
+      ...(resourceType === "posts" && 'userId' in item && { userId: String(item.userId) }),
+      ...(resourceType === "comments" && 'postId' in item && { postId: String(item.postId) }),
+      // For products, we're no longer converting price to string to avoid data type issues
     } : {
       // Empty defaults based on resource type
       ...(resourceType === "users" && { name: "", email: "", username: "", password: "" }),
@@ -140,7 +140,20 @@ export default function ResourceForm({
   });
 
   const onSubmit = (data: FormValues) => {
-    mutation.mutate(data);
+    // Make sure we're sending the correct data types to the server
+    let processedData = { ...data };
+    
+    // For products, ensure price is a number when submitting
+    if (resourceType === "products" && 'price' in processedData) {
+      processedData = {
+        ...processedData,
+        price: typeof processedData.price === 'string' 
+          ? parseFloat(processedData.price) 
+          : processedData.price
+      };
+    }
+    
+    mutation.mutate(processedData);
   };
 
   const getFormIcon = () => {
